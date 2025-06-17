@@ -3,46 +3,58 @@ import pandas as pd
 import numpy as np
 import joblib
 
-# Load the trained model
-model = joblib.load('xgb_model.pkl')
+
+# Load your trained model
+model = joblib.load("xgb_model.pkl")
 
 st.title("Bank Marketing Prediction App")
 st.write("Predict whether a customer will subscribe to a term deposit.")
 
-# Input fields
-job = st.selectbox("Job", list(range(0, 12)))  # Replace with your encoded values or a mapping
-marital = st.selectbox("Marital Status", list(range(0, 3)))
-education = st.selectbox("Education", list(range(0, 4)))
-default = st.selectbox("Default", [0, 1])
-balance = st.number_input("Balance", value=0)
-housing = st.selectbox("Housing Loan", [0, 1])
-loan = st.selectbox("Personal Loan", [0, 1])
-contact = st.selectbox("Contact Communication Type", list(range(0, 3)))
-day = st.number_input("Last Contact Day of the Month", value=15)
-month = st.selectbox("Last Contact Month", list(range(0, 12)))
-duration = st.number_input("Last Contact Duration (seconds)", value=180)
-campaign = st.number_input("Number of Contacts in this Campaign", value=1)
-previous = st.number_input("Number of Contacts Before this Campaign", value=0)
-poutcome = st.selectbox("Previous Outcome", list(range(0, 4)))
-was_previously_contacted = st.selectbox("Was Previously Contacted", [0, 1])
-age_group = st.selectbox("Age Group", list(range(0, 5)))  # e.g., 0: 18–25, 1: 26–35...
-balance_group = st.selectbox("Balance Group", list(range(0, 4)))  # e.g., 0: Low, 1: Med...
+# --- Categorical Mappings ---
 
-# Prepare input
-input_data = pd.DataFrame([[
-    job, marital, education, default, balance, housing, loan, contact,
-    day, month, duration, campaign, previous, poutcome,
-    was_previously_contacted, age_group, balance_group
-]], columns=[
-    'job', 'marital', 'education', 'default', 'balance', 'housing',
-    'loan', 'contact', 'day', 'month', 'duration', 'campaign', 'previous',
-    'poutcome', 'was_previously_contacted', 'age_group', 'balance_group'
-])
+job_options = {
+    0: 'admin.', 1: 'blue-collar', 2: 'entrepreneur', 3: 'housemaid',
+    4: 'management', 5: 'retired', 6: 'self-employed', 7: 'services',
+    8: 'student', 9: 'technician', 10: 'unemployed', 11: 'unknown'
+}
 
-# Predict
+marital_options = {
+    0: 'divorced', 1: 'married', 2: 'single'
+}
+
+education_options = {
+    0: 'primary', 1: 'secondary', 2: 'tertiary', 3: 'unknown'
+}
+
+default_options = {
+    0: 'no', 1: 'yes'
+}
+
+# --- Streamlit UI ---
+
+job = st.selectbox("Job", list(job_options.values()))
+marital = st.selectbox("Marital Status", list(marital_options.values()))
+education = st.selectbox("Education", list(education_options.values()))
+default = st.selectbox("Default", list(default_options.values()))
+balance = st.number_input("Balance", min_value=0)
+housing = st.selectbox("Housing Loan", ['yes', 'no'])
+loan = st.selectbox("Personal Loan", ['yes', 'no'])
+
+# --- Encode selections back to numerical values ---
+
+job_encoded = list(job_options.keys())[list(job_options.values()).index(job)]
+marital_encoded = list(marital_options.keys())[list(marital_options.values()).index(marital)]
+education_encoded = list(education_options.keys())[list(education_options.values()).index(education)]
+default_encoded = list(default_options.keys())[list(default_options.values()).index(default)]
+housing_encoded = 1 if housing == 'yes' else 0
+loan_encoded = 1 if loan == 'yes' else 0
+
+# --- Prepare features for model ---
+features = np.array([[job_encoded, marital_encoded, education_encoded, default_encoded,
+                      balance, housing_encoded, loan_encoded]])
+
+# --- Prediction ---
 if st.button("Predict"):
-    prediction = model.predict(input_data)[0]
-    result = "Subscribed" if prediction == 1 else "Not Subscribed"
-    st.success(f"The model predicts: {result}")
-
+    prediction = model.predict(features)[0]
+    st.success("Subscribed ✅" if prediction == 1 else "Not Subscribed ❌")
 
